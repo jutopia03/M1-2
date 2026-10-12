@@ -77,7 +77,7 @@ def main():
         return
     question = sys.argv[1] if len(sys.argv) > 1 else "가장 더웠던 날은 언제야?"
     run("1단계 연결", [{"role": "user", "content": "한 문장으로 인사해줘."}])
-    system = chat_service.build_system_prompt(data_service.get_summary())
+    system = chat_service.build_system_prompt(data_service.get_summary(), data_service.get_statistics())
     run(f"2단계 데이터 질문: {question}",
         [{"role": "system", "content": system}, {"role": "user", "content": question}])
 

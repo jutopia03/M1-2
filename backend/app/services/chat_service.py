@@ -52,7 +52,16 @@ def _fmt_extremes(ex: dict) -> str:
     return f"- 하루 중 기온·강수 극값: {' / '.join(parts)}\n" if parts else ""
 
 
-def build_system_prompt(summary: dict) -> str:
+def _fmt_yoy(yoy: dict | None) -> str:
+    """진행 중인 달을 전년 같은 달 '전체'와 비교하면 일수 차이로 결론이 뒤집힐 수 있다.
+    (예: 10월 1~12일 vs 작년 10월 31일 전체) -> 같은 일수끼리 비교한 값을 따로 준다."""
+    if not yoy:
+        return ""
+    return (f"- 전년 동기 비교 (같은 일수): {yoy['month']} {yoy['compared_days']} 평균 {yoy['avg']}°C"
+            f" vs {yoy['prev_month']} 같은 기간 {yoy['prev_avg']}°C (차이 {yoy['diff']:+}°C)\n")
+
+
+def build_system_prompt(summary: dict, statistics: dict | None = None) -> str:
     """summary(dict)를 사람이 읽는 형태의 텍스트로 바꿔 시스템 프롬프트에 넣는다.
     JSON을 그대로 넣는 것보다 토큰이 적고 모델이 이해하기 쉽다."""
     today = dt.datetime.now(KST).date().isoformat()
@@ -76,6 +85,7 @@ def build_system_prompt(summary: dict) -> str:
         + _fmt_extremes(summary.get("extremes") or {}) +
         f"- 최근 트렌드: {summary['trend']}\n"
         f"- 월별 평균기온 (괄호는 포함 일수): {monthly}\n"
+        + _fmt_yoy((statistics or {}).get("year_over_year")) +
         f"- 최근 {len(summary['recent_days'])}일 기록:\n{recent}\n\n"
         "[답변 규칙]\n"
         "1. 위 데이터에 있는 값만 근거로 답하고, 숫자를 지어내지 마세요.\n"
@@ -84,7 +94,8 @@ def build_system_prompt(summary: dict) -> str:
         "3. 데이터 기간 밖의 일(미래 예보 포함)은 알 수 없다고 말하세요.\n"
         "4. '평균기온'과 '최고/최저기온'을 구분해서 말하세요. '가장 더웠던/추웠던 날'처럼 기준이 모호하면 "
         "일평균기온 기준과 최고(최저)기온 기준을 함께 알려주세요.\n"
-        "5. 비교 질문에는 구체적인 수치와 차이를 함께 제시하세요. 일수가 적은 월은 그 점을 언급하세요.\n"
+        "5. 비교 질문에는 구체적인 수치와 차이를 함께 제시하세요. 진행 중인(일수가 적은) 달을 작년 같은 달과 "
+        "비교할 때는 월 전체 평균이 아니라 '전년 동기 비교 (같은 일수)' 값을 사용하세요.\n"
         "6. 한국어로, 2~4문장 정도로 간결하게 답하세요."
     )
 
@@ -125,6 +136,7 @@ def _call_openai(messages: list[dict]) -> str:
 
 def chat(message: str, conversation_id: Optional[str] = None) -> dict:
     summary = data_service.get_summary()
+    statistics = data_service.get_statistics()  # 같은 캐시를 쓰므로 추가 읽기 없음
 
     history = []
     if conversation_id:  # 없는 ID면 여기서 404
@@ -132,7 +144,7 @@ def chat(message: str, conversation_id: Optional[str] = None) -> dict:
         history = conv.get("messages", [])[-settings.CHAT_HISTORY_LIMIT:]
 
     messages = (
-        [{"role": "system", "content": build_system_prompt(summary)}]
+        [{"role": "system", "content": build_system_prompt(summary, statistics)}]
         + [{"role": m["role"], "content": m["content"]} for m in history]
         + [{"role": "user", "content": message}]
     )

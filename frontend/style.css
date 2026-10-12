@@ -195,7 +195,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .chat-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); align-items: flex-end; }
 .chat-form textarea {
-  flex: 1; resize: none; max-height: 140px; padding: 10px 12px; border-radius: 10px;
+  flex: 1; resize: none; max-height: 140px; overflow-y: hidden; padding: 10px 12px; border-radius: 10px;
   border: 1px solid var(--border); background: var(--bg); line-height: 1.45;
 }
 

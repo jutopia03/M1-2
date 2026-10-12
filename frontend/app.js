@@ -326,6 +326,7 @@
   function autoResize(ta) {
     ta.style.height = "auto";
     ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
+    ta.style.overflowY = ta.scrollHeight > 140 ? "auto" : "hidden"; // 한 줄일 땐 스크롤바 숨김
   }
 
   async function sendMessage(text) {
