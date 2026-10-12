@@ -116,3 +116,32 @@ class SummaryResponse(BaseModel):
     trend: str
     monthly_avg: dict[str, MonthlyStat]
     recent_days: list[RecentDay]
+
+
+class YearOverYear(BaseModel):
+    month: str
+    prev_month: str
+    compared_days: str = Field(..., description="비교한 일 범위 (진행 중인 달은 같은 일수끼리 비교)")
+    avg: float
+    prev_avg: float
+    diff: float
+
+
+class MonthlyDetail(BaseModel):
+    month: str
+    days: int
+    avg: Optional[float]
+    avg_max: Optional[float]
+    avg_min: Optional[float]
+    rain_total: float
+
+
+class StatisticsResponse(BaseModel):
+    """GET /api/data/statistics — 요약 외 추가 지표 + 그래프용 월별 데이터"""
+    count: int
+    rain_days: int = Field(..., description="강수일수 (일강수량 > 0)")
+    avg_daily_range: Optional[float] = Field(None, description="평균 일교차 (°C)")
+    heatwave_days: int = Field(..., description="폭염일수 (최고기온 33°C 이상)")
+    freezing_days: int = Field(..., description="영하일수 (최저기온 0°C 미만)")
+    year_over_year: Optional[YearOverYear] = Field(None, description="최신 월 vs 전년 같은 월")
+    monthly: list[MonthlyDetail]

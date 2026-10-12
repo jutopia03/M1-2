@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 from fastapi import APIRouter, Path, Query
 
-from app.schemas.data import DataCreate, DataItem, DataUpdate, SummaryResponse
+from app.schemas.data import DataCreate, DataItem, DataUpdate, StatisticsResponse, SummaryResponse
 from app.services import data_service
 
 router = APIRouter(prefix="/api/data", tags=["data"])
@@ -13,10 +13,15 @@ DateId = Path(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="문서 ID (= 날
               examples=["2026-10-11"])
 
 
-# /summary 는 /{data_id} 형태 경로보다 먼저 선언해야 'summary'가 ID로 해석되지 않는다.
+# /summary, /statistics 는 /{data_id} 형태 경로보다 먼저 선언해야 ID로 해석되지 않는다.
 @router.get("/summary", response_model=SummaryResponse, summary="데이터 요약 (프롬프트 주입용)")
 def get_summary():
     return data_service.get_summary()
+
+
+@router.get("/statistics", response_model=StatisticsResponse, summary="추가 지표 + 월별 그래프 데이터")
+def get_statistics():
+    return data_service.get_statistics()
 
 
 @router.post("", response_model=DataItem, status_code=201, summary="새 데이터 추가")
